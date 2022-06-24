@@ -1,15 +1,13 @@
 import badger2040
 import qrcode
-import time
-import os
-import imgget
+
+badger2040.system_speed(0) # lets save some battery
 
 display = badger2040.Badger2040()
 
+display.update_speed(2)
+
 code = qrcode.QRCode()
-
-page = 0
-
 
 def measure_qr_code(size, code):
     w, h = code.get_size()
@@ -27,7 +25,9 @@ def draw_qr_code(ox, oy, size, code):
             if code.get_module(x, y):
                 display.rectangle(ox + x * module_size, oy + y * module_size, module_size, module_size)
 
-def kep(qr):
+
+# Name Badge Mode
+def mode1(qr):
     display.pen(15)
     display.clear()
     # Hello top banner
@@ -65,10 +65,13 @@ def kep(qr):
     display.pen(15)
     display.rectangle(148, 122+5, 2, 2)
     display.rectangle(148+2, 122, 4, 4)
-    
-def photo(qr, photos):
+
+
+# Photography Mode
+def mode2(qr, photos):
     display.pen(15)
     display.clear()
+    
     # Hello top banner
     display.pen(0)
     display.rectangle(0, 0, 298, 40)
@@ -106,14 +109,36 @@ def photo(qr, photos):
     display.rectangle(148+2, 122, 4, 4)
 
     
+# switches between modes
+def mode(photo_mode, show_QR, photos_taken):
+    if photo_mode:
+        mode2(show_QR, photos_taken)
+    else:
+        mode1(show_QR)
+        
+def update_runner(changed, changed_QR, changed_tally, photos_taken):
+    if changed_QR:
+        display.update_speed(0) # partial_update only works on update_speed zero
+        display.partial_update(198, 40, 96, 96)
+        display.update_speed(2)
+    elif changed_tally:
+        display.update_speed(0)
+        display.partial_update(135, 96, 60, 32)
+        with open("photos.txt", 'w') as file: 
+            file.write(str(photos_taken))
+        display.update_speed(2)
+    else:
+        display.update()
+    
+
 changed = True
 inverted = False
 show_QR = False
-changed_partial = False
+changed_QR = False
 changed_tally = False
 photo_mode = False
 
-with open("photos.txt", "r") as file: 
+with open("photos.txt", 'r') as file: 
     photos_taken = int(file.read())
 
 while True: 
@@ -125,10 +150,12 @@ while True:
         changed = True
 
     if display.pressed(badger2040.BUTTON_B):
-        if show_QR: show_QR = False
-        else: show_QR = True
+        if show_QR:
+            show_QR = False
+        else:
+            show_QR = True
         changed = True
-        changed_partial = True
+        changed_QR = True
         
     if display.pressed(badger2040.BUTTON_C):
         if photo_mode:
@@ -147,28 +174,14 @@ while True:
         changed = True
         changed_tally = True
     
-    
     if changed:
         display.invert(inverted)
-        with open("photos.txt", "w") as file:
-            file.write(str(photos_taken))
+        mode(photo_mode, show_QR, photos_taken)
+        update_runner(changed, changed_QR, changed_tally, photos_taken)
         
-        
-        if photo_mode:
-            photo(show_QR, photos_taken)
-        else:
-            kep(show_QR)
-        
-        if changed_partial:
-            display.partial_update(198, 40, 96, 96)
-            changed_partial = False
-        elif changed_tally:
-            photo(show_QR, photos_taken)
-            #display.update()
-            display.partial_update(135, 96, 60, 32)
-            changed_tally = False
-        else:
-            display.update()
         changed = False
+        changed_QR = False
+        changed_tally = False
         
+    display.halt()
 
