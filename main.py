@@ -110,7 +110,8 @@ def mode2(qr, photos):
 
     
 # switches between modes
-def mode(photo_mode, show_QR, photos_taken):
+def mode(photo_mode, show_QR, photos_taken, inverted):
+    display.invert(inverted)
     if photo_mode:
         mode2(show_QR, photos_taken)
     else:
@@ -175,8 +176,7 @@ while True:
         changed_tally = True
     
     if changed:
-        display.invert(inverted)
-        mode(photo_mode, show_QR, photos_taken)
+        mode(photo_mode, show_QR, photos_taken, inverted)
         update_runner(changed, changed_QR, changed_tally, photos_taken)
         
         changed = False
@@ -184,4 +184,5 @@ while True:
         changed_tally = False
         
     display.halt()
+
 
